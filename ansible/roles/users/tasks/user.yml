@@ -1,0 +1,20 @@
+- name: Create a new user "{{ user.name }}"
+  user:
+    name: "{{ user.name }}"
+    shell: /bin/bash
+    append: yes
+    groups: adm,sudo
+
+- name: Check if .ssh folder exists
+  file:
+    path: "/home/{{ user.name }}/.ssh"
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    mode: 0755
+    state: directory
+
+- name: Set authorized key, removing all the authorized keys already set
+  authorized_key:
+    user: "{{ user.name }}"
+    exclusive: True
+    key: "{{ user.ssh_key_pub }}"

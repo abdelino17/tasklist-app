@@ -1,0 +1,4 @@
+- include_tasks: user.yml
+  with_items: "{{ ops_users }}"
+  loop_control:
+    loop_var: user

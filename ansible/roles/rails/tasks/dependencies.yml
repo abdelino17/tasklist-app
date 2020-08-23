@@ -1,0 +1,116 @@
+- name: Ruby dependencies
+  apt:
+    name:
+      [
+        "gcc",
+        "autoconf",
+        "bison",
+        "build-essential",
+        "libssl-dev",
+        "libyaml-dev",
+        "libreadline6-dev",
+        "zlib1g-dev",
+        "libncurses5-dev",
+        "libffi-dev",
+        "libgdbm5",
+        "libgdbm-dev",
+        "nodejs",
+        "git",
+        "mysql-client",
+        "libmysqlclient-dev",
+        "build-essential",
+        "sqlite3",
+      ]
+    update_cache: yes
+
+- name: Download ruby-install
+  get_url:
+    url: https://github.com/postmodern/ruby-install/archive/v0.7.0.tar.gz
+    dest: /home/ubuntu/ruby-install-0.7.0.tar.gz
+
+- name: Extract ruby-install tarball
+  unarchive:
+    src: /home/ubuntu/ruby-install-0.7.0.tar.gz
+    dest: /home/ubuntu
+    creates: /home/ubuntu/ruby-install-0.7.0
+    remote_src: yes
+
+- name: Install ruby-install
+  make:
+    chdir: /home/ubuntu/ruby-install-0.7.0
+    target: install
+
+- name: Install Ruby
+  become_user: "{{ deploy_user }}"
+  command: "/usr/local/bin/ruby-install --no-install-deps ruby {{ ruby_version }}"
+  args:
+    creates: "/home/{{ deploy_user }}/.rubies/ruby-{{ ruby_version }}"
+
+- name: Download Chruby
+  get_url:
+    url: https://github.com/postmodern/chruby/archive/v0.3.9.tar.gz
+    dest: /home/ubuntu/chruby-0.3.9.tar.gz
+
+- name: Extract chruby tarball
+  unarchive:
+    src: /home/ubuntu/chruby-0.3.9.tar.gz
+    dest: /home/ubuntu
+    creates: /home/ubuntu/chruby-0.3.9
+    remote_src: yes
+
+- name: Install chruby
+  make:
+    chdir: /home/ubuntu/chruby-0.3.9
+    target: install
+
+- name: Load chruby for {{ deploy_user }} user
+  lineinfile:
+    path: "/home/{{ deploy_user }}/.bashrc"
+    regexp: "chruby.sh$"
+    line: "source /usr/local/share/chruby/chruby.sh"
+    insertbefore: BOF
+
+- name: Set ruby version for {{ deploy_user }} user
+  lineinfile:
+    path: "/home/{{ deploy_user }}/.profile"
+    regexp: "^chruby"
+    line: "chruby ruby-{{ ruby_version }}"
+
+- name: Install bundler
+  become_user: "{{ deploy_user }}"
+  command: "chruby-exec ruby-{{ ruby_version }} -- gem install bundler"
+  args:
+    creates: "/home/{{ deploy_user }}/.gem/ruby/{{ ruby_version }}/bin/bundle"
+
+- name: Check if apt-transport-https is installed
+  apt:
+    name: apt-transport-https
+    state: present
+
+- name: Add apt key for nodesource
+  apt_key:
+    url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+
+- name: Add repo for nodesource
+  apt_repository:
+    repo: "deb https://deb.nodesource.com/node_12.x {{ ansible_distribution_release }} main"
+    update_cache: yes
+
+- name: Install the LTS version of Nodejs
+  apt:
+    name: nodejs
+    state: latest
+
+- name: Add Yarn apt key
+  apt_key:
+    url: https://dl.yarnpkg.com/debian/pubkey.gpg
+
+- name: Add Yarn repository
+  apt_repository:
+    repo: "deb https://dl.yarnpkg.com/debian/ stable main"
+    filename: yarn
+
+- name: Install Yarn
+  apt:
+    name: yarn
+    state: present

@@ -1,0 +1,60 @@
+- name: Install mysql server
+  apt:
+    name: mysql-server
+    state: latest
+    update_cache: yes
+
+- name: Update the Mysql Config file
+  template:
+    src: my.cnf.j2
+    dest: "/etc/mysql/my.cnf"
+    owner: "root"
+    group: "root"
+    mode: 0755
+  notify:
+    - restart mysql
+
+- name: Install python3-pip
+  package:
+    name: python3-pip
+
+- name: Install python3-dev
+  package:
+    name: python3-dev
+
+- name: Make sure pymysql is present
+  pip:
+    name: pymysql
+    state: present
+    executable: /usr/bin/pip3
+
+- name: Sets the root password
+  mysql_user:
+    name: root
+    password: "{{ mysql_root_password }}"
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+
+- name: Check if the application database exists
+  mysql_db:
+    name: "tasklist-{{ env }}"
+    state: present
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+
+- name: "Create a specific user for application database"
+  mysql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    host: "{{ item }}"
+    priv: "tasklist-{{ env }}.*:ALL,GRANT"
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    state: present
+  with_items:
+    - "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    - "{{ ansible_hostname }}"
+    - "{{ app_ip }}"
+    - 127.0.0.1
+    - localhost

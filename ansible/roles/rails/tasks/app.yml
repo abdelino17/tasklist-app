@@ -1,0 +1,67 @@
+- name: Clone the repo
+  become_user: "{{ deploy_user }}"
+  git:
+    clone: yes
+    repo: https://github.com/mikrob/railsapp.git
+    dest: "{{ app_dir }}"
+    version: master
+    force: yes
+    accept_hostkey: yes
+
+- name: Update database.yml
+  template:
+    src: "database.yml.j2"
+    dest: "{{ app_dir }}/config/database.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: 0755
+
+- name: Run bundler
+  become_user: "{{ deploy_user }}"
+  shell: "chruby-exec ruby-{{ ruby_version }} -- bundle install --without development test"
+  args:
+    chdir: "{{ app_dir }}"
+
+- name: Run yarn check
+  become_user: "{{ deploy_user }}"
+  shell: "yarn install --check-files --ignore-engines"
+  args:
+    chdir: "{{ app_dir }}"
+  environment:
+    RAILS_ENV: "production"
+
+- name: Assets compilation
+  become_user: "{{ deploy_user }}"
+  shell: "chruby-exec ruby-{{ ruby_version }} -- bundle exec rake assets:precompile"
+  args:
+    chdir: "{{ app_dir }}"
+  environment:
+    RAILS_ENV: "production"
+
+- name: Setup the database
+  become_user: "{{ deploy_user }}"
+  shell: "chruby-exec ruby-{{ ruby_version }} -- bundle exec rails db:setup"
+  environment:
+    RAILS_ENV: "production"
+  args:
+    chdir: "{{ app_dir }}"
+  run_once: True
+  ignore_errors: True
+
+- name: Run db:migrate
+  become_user: "{{ deploy_user }}"
+  shell: "chruby-exec ruby-{{ ruby_version }} -- bundle exec rails db:migrate"
+  environment:
+    RAILS_ENV: "production"
+  args:
+    chdir: "{{ app_dir }}"
+  run_once: True
+  ignore_errors: True
+
+- name: Execute rails server
+  become_user: "{{ deploy_user }}"
+  environment:
+    RAILS_ENV: "production"
+  shell: "chruby-exec ruby-{{ ruby_version }} -- bundle exec rails server -b 0.0.0.0 -d"
+  args:
+    chdir: "{{ app_dir }}"

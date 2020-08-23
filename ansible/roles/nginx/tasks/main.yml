@@ -1,0 +1,13 @@
+- name: Install nginx
+  apt:
+    name: nginx
+    state: latest
+
+- name: copy virtual host file
+  template:
+    src: "nginx_vhost.conf.j2"
+    dest: "/etc/nginx/sites-enabled/default"
+    owner: "www-data"
+    group: "www-data"
+    mode: 0644
+  notify: reload nginx

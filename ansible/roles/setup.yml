@@ -1,0 +1,37 @@
+- hosts: all
+  become: yes
+  become_method: sudo
+  become_user: root
+  pre_tasks:
+    - name: Group variables
+      include_vars:
+        file: "../group_vars/all.yml"
+  roles:
+    - role: users
+      ops_users:
+        - name: abdel
+          ssh_key_pub: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQChYDw/J8J8ig31W2PLHbE9KlYipLy07fMm1/zPpT0Hesv3VZuvtokWVf2pMg8Ba/qA/X0FwNBq4uXFVfLFByQvDkcsNFw9yJ12W+n7SCoffNvh+Q6IBi32LkHCx8HQ6z8gVG/6/kSwtXzCWLvpVvwkY9eJMwMi7s6gCmxemW7C6lOMULslfN25ujpKQdssFB6BbbG18TccGuVv84gXMNYXcxlxX94D1udqGKIRnoh2XJOMFj9aSPf8NPFhWElbTUi3J/nQBQrxC4GfH3XPpO4F+0RTP7gaOyCLnQDp/Sro/DzwHqBFr8anx0qi+BdekH+/vpBXXWjakP25OeJL43Nb adminsys@LAPTOP-0GJ4J29A
+        - name: devops
+          ssh_key_pub: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQChYDw/J8J8ig31W2PLHbE9KlYipLy07fMm1/zPpT0Hesv3VZuvtokWVf2pMg8Ba/qA/X0FwNBq4uXFVfLFByQvDkcsNFw9yJ12W+n7SCoffNvh+Q6IBi32LkHCx8HQ6z8gVG/6/kSwtXzCWLvpVvwkY9eJMwMi7s6gCmxemW7C6lOMULslfN25ujpKQdssFB6BbbG18TccGuVv84gXMNYXcxlxX94D1udqGKIRnoh2XJOMFj9aSPf8NPFhWElbTUi3J/nQBQrxC4GfH3XPpO4F+0RTP7gaOyCLnQDp/Sro/DzwHqBFr8anx0qi+BdekH+/vpBXXWjakP25OeJL43Nb adminsys@LAPTOP-0GJ4J29A
+    - role: base
+
+- hosts: bdd
+  become: yes
+  become_method: sudo
+  become_user: root
+  roles:
+    - role: mysql
+
+- hosts: app
+  become: yes
+  become_method: sudo
+  become_user: root
+  roles:
+    - role: rails
+
+- hosts: front
+  become: yes
+  become_method: sudo
+  become_user: root
+  roles:
+    - role: nginx

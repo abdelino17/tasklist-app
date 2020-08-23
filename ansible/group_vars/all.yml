@@ -1,0 +1,4 @@
+deploy_user: devops
+env: test
+db_user: tasklist
+db_password: tasklist@20
